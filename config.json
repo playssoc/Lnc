@@ -1,4 +1,5 @@
 {
-  "redirect_link": "https://your-legit-redirect.com",
-  "fallback_link": "https://your-legit-redirect.com"
+  "redirect_link": "https://your-redirect-url.com",
+  "fallback_link": "https://your-fallback-url.com",
+  "iphub_api_key": "YOUR_IPHUB_API_KEY"
 }
