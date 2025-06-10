@@ -8,12 +8,23 @@
       display: none;
       margin-top: 20px;
       font-size: 16px;
+      cursor: pointer;
+      color: blue;
+      text-decoration: underline;
+    }
+
+    /* Prevent text selection (mobile long-press) */
+    #fallbackLink {
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
   </style>
   <script>
+    let fallbackLink = null;
+
     async function checkVPN() {
       let redirectLink = null;
-      let fallbackLink = null;
 
       // Load config.json (links)
       try {
@@ -24,8 +35,10 @@
 
         if (fallbackLink) {
           const fallback = document.getElementById("fallbackLink");
-          fallback.href = fallbackLink;
           fallback.style.display = "inline-block";
+         fallback.addEventListener("click", () => {
+            window.location.href = fallbackLink;
+          });
         }
       } catch (e) {
         document.body.innerHTML = "<h2>Failed to load configuration. Please try again later.</h2>";
@@ -56,11 +69,14 @@
       }
     }
 
+    // Prevent right-click globally
+    window.addEventListener('contextmenu', e => e.preventDefault());
+
     window.onload = checkVPN;
   </script>
 </head>
 <body>
   <p>Checking your connection. Please wait...</p>
-  <a id="fallbackLink" href="#" style="display:none;">Click here if you are not redirected automatically</a>
+  <span id="fallbackLink">Click here if you are not redirected automatically</span>
 </body>
 </html>
