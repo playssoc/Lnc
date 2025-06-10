@@ -14,34 +14,38 @@
     async function checkVPN() {
       let redirectLink = null;
       let fallbackLink = null;
+      let apiKey = null;
 
-      // Load both links from config.json
+      // Load config.json (redirects + API key)
       try {
         const configResponse = await fetch('config.json');
         const config = await configResponse.json();
         redirectLink = config.redirect_link || null;
         fallbackLink = config.fallback_link || null;
+        apiKey = config.iphub_api_key || null;
 
-        // Set and show fallback link if available
         if (fallbackLink) {
           const fallback = document.getElementById("fallbackLink");
           fallback.href = fallbackLink;
           fallback.style.display = "inline-block";
         }
+
+        if (!apiKey) {
+          document.body.innerHTML = "<h2>Missing IPHub API key in configuration.</h2>";
+          return; }
       } catch (e) {
         document.body.innerHTML = "<h2>Failed to load configuration. Please try again later.</h2>";
         return;
       }
 
-      // VPN detection
+      // VPN detection using IPHub
       try {
-        const response = await fetch('https://ipapi.co/json/');
-        const data = await response.json();
+        const response = await fetch('https://v2.api.iphub.info/ip', {
+          headers: { 'X-Key': apiKey }
+        });
 
-        const isVPN = data.proxy ||
-                      data.security?.vpn ||
-                      data.security?.proxy ||
-                      (data.isp && data.isp.toLowerCase().includes("vpn"));
+        const data = await response.json();
+        const isVPN = data.block === 1 || data.block === 2;
 
         if (isVPN) {
           document.body.innerHTML = "<h2>Access denied. VPN or proxy use detected. Please disable it to proceed.</h2>";
@@ -53,15 +57,14 @@
           document.body.innerHTML = "<h2>No redirect link found in config.</h2>";
         }
       } catch (error) {
-        document.body.innerHTML = "<h2>Could not verify your connection. Try again later.</h2>";
+        document.body.innerHTML = "<h2>Error verifying connection. Try again later.</h2>";
       }
     }
 
     window.onload = checkVPN;
   </script>
 </head>
-<body>
-  <p>Checking your connection. Please wait...</p>
+<body>  <p>Checking your connection. Please wait...</p>
   <a id="fallbackLink" href="#" style="display:none;">Click here if you are not redirected automatically</a>
 </body>
 </html>
