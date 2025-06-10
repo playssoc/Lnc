@@ -14,38 +14,33 @@
     async function checkVPN() {
       let redirectLink = null;
       let fallbackLink = null;
-      let apiKey = null;
 
-      // Load config.json (redirects + API key)
+      // Load config.json (links)
       try {
         const configResponse = await fetch('config.json');
         const config = await configResponse.json();
         redirectLink = config.redirect_link || null;
         fallbackLink = config.fallback_link || null;
-        apiKey = config.iphub_api_key || null;
 
         if (fallbackLink) {
           const fallback = document.getElementById("fallbackLink");
           fallback.href = fallbackLink;
           fallback.style.display = "inline-block";
         }
-
-        if (!apiKey) {
-          document.body.innerHTML = "<h2>Missing IPHub API key in configuration.</h2>";
-          return; }
       } catch (e) {
         document.body.innerHTML = "<h2>Failed to load configuration. Please try again later.</h2>";
         return;
       }
 
-      // VPN detection using IPHub
+      // VPN detection using ipwho.is
       try {
-        const response = await fetch('https://v2.api.iphub.info/ip', {
-          headers: { 'X-Key': apiKey }
-        });
-
+        const response = await fetch('https://ipwho.is/');
         const data = await response.json();
-        const isVPN = data.block === 1 || data.block === 2;
+
+        const isVPN = data.proxy ||
+                      data.connection?.type === "vpn" ||
+                      data.connection?.type === "proxy" ||
+                      (data.connection?.isp && data.connection.isp.toLowerCase().includes("vpn"));
 
         if (isVPN) {
           document.body.innerHTML = "<h2>Access denied. VPN or proxy use detected. Please disable it to proceed.</h2>";
@@ -64,7 +59,8 @@
     window.onload = checkVPN;
   </script>
 </head>
-<body>  <p>Checking your connection. Please wait...</p>
+<body>
+  <p>Checking your connection. Please wait...</p>
   <a id="fallbackLink" href="#" style="display:none;">Click here if you are not redirected automatically</a>
 </body>
 </html>
