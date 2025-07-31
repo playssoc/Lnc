@@ -1,82 +1,988 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>gen Access</title>
-  <style>
-    #fallbackLink {
-      display: none;
-      margin-top: 20px;
-      font-size: 16px;
-      cursor: pointer;
-      color: blue;
-      text-decoration: underline;
-    }
-
-    /* Prevent text selection (mobile long-press) */
-    #fallbackLink {
-      -webkit-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-  </style>
-  <script>
-    let fallbackLink = null;
-
-    async function checkVPN() {
-      let redirectLink = null;
-
-      // Load config.json (links)
-      try {
-        const configResponse = await fetch('config.json');
-        const config = await configResponse.json();
-        redirectLink = config.redirect_link || null;
-        fallbackLink = config.fallback_link || null;
-
-        if (fallbackLink) {
-          const fallback = document.getElementById("fallbackLink");
-          fallback.style.display = "inline-block";
-         fallback.addEventListener("click", () => {
-            window.location.href = fallbackLink;
-          });
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linkin Park Year Guesser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-      } catch (e) {
-        document.body.innerHTML = "<h2>Failed to load configuration. Please try again later.</h2>";
-        return;
-      }
 
-      // VPN detection using ipwho.is
-      try {
-        const response = await fetch('https://ipwho.is/');
-        const data = await response.json();
-
-        const isVPN = data.proxy ||
-                      data.connection?.type === "vpn" ||
-                      data.connection?.type === "proxy" ||
-                      (data.connection?.isp && data.connection.isp.toLowerCase().includes("vpn"));
-
-        if (isVPN) {
-          document.body.innerHTML = "<h2>Access denied. VPN or proxy use detected. Please disable it to proceed.</h2>";
-        } else if (redirectLink) {
-          setTimeout(() => {
-            window.location.href = redirectLink;
-          }, 3000);
-        } else {
-          document.body.innerHTML = "<h2>No redirect link found in config.</h2>";
-        }
-      } catch (error) {
-        document.body.innerHTML = "<h2>Error verifying connection. Try again later.</h2>";
-      }
+```
+    body {
+        font-family: 'Arial', sans-serif;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        color: #ffffff;
+        min-height: 100vh;
+        overflow-x: hidden;
     }
 
-    // Prevent right-click globally
-    window.addEventListener('contextmenu', e => e.preventDefault());
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
 
-    window.onload = checkVPN;
-  </script>
+    h1 {
+        font-size: 2.5em;
+        text-align: center;
+        margin-bottom: 30px;
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0 0 30px rgba(255, 107, 107, 0.3);
+    }
+
+    .screen {
+        display: none;
+        width: 100%;
+        max-width: 600px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .screen.active {
+        display: block;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #4ecdc4;
+    }
+
+    input[type="text"], input[type="number"], select {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+        font-size: 16px;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+        outline: none;
+        border-color: #4ecdc4;
+        box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+    }
+
+    button {
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 5px;
+    }
+
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        margin: 15px 0;
+    }
+
+    input[type="checkbox"] {
+        margin-right: 10px;
+        transform: scale(1.2);
+    }
+
+    .lobby-buttons {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+        justify-content: center;
+    }
+
+    .leaderboard, .game-history {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 15px 0;
+    }
+
+    .leaderboard h3, .game-history h3 {
+        color: #4ecdc4;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .leaderboard-item, .history-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .song-list {
+        max-height: 200px;
+        overflow-y: auto;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 10px;
+        margin: 10px 0;
+    }
+
+    .song-item {
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: background 0.3s ease;
+    }
+
+    .song-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .song-item.selected {
+        background: rgba(78, 205, 196, 0.3);
+    }
+
+    .audio-player {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .audio-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        margin: 20px 0;
+    }
+
+    .play-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .game-info {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 10px;
+        margin: 15px 0;
+        text-align: center;
+    }
+
+    .waiting-screen {
+        text-align: center;
+        padding: 40px;
+    }
+
+    .spinner {
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid #4ecdc4;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .result-screen {
+        text-align: center;
+    }
+
+    .correct {
+        color: #4ecdc4;
+    }
+
+    .incorrect {
+        color: #ff6b6b;
+    }
+
+    .filters {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin: 20px 0;
+    }
+
+    @media (max-width: 600px) {
+        .filters {
+            grid-template-columns: 1fr;
+        }
+        
+        .lobby-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+    }
+</style>
+```
+
 </head>
 <body>
-  <p>Loading generator... Please wait...</p>
-  <span id="fallbackLink">Click here if you are not redirected automatically</span>
+    <div class="container">
+        <h1>🎤 Linkin Park Year Guesser</h1>
+
+```
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen active">
+        <h2>Login</h2>
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" placeholder="Enter username (Playsso or Aybel)">
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="rememberMe">
+            <label for="rememberMe">Remember me</label>
+        </div>
+        <button onclick="login()">Login</button>
+        <div id="loginError" style="color: #ff6b6b; margin-top: 10px; text-align: center;"></div>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div id="lobbyScreen" class="screen">
+        <h2>Welcome, <span id="welcomeUser"></span>!</h2>
+        <div class="lobby-buttons">
+            <button onclick="showCreateGame()">Create Game</button>
+            <button onclick="showJoinGame()">Join Game</button>
+        </div>
+        
+        <div class="leaderboard">
+            <h3>🏆 Leaderboard</h3>
+            <div id="leaderboardList">
+                <div class="leaderboard-item">
+                    <span>Playsso</span>
+                    <span id="playssoScore">0 points</span>
+                </div>
+                <div class="leaderboard-item">
+                    <span>Aybel</span>
+                    <span id="aybelScore">0 points</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-history">
+            <h3>📚 Game History</h3>
+            <div id="gameHistoryList">
+                <div class="history-item">No games played yet</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Game Screen -->
+    <div id="createGameScreen" class="screen">
+        <h2>Create Game</h2>
+        <div class="filters">
+            <div class="form-group">
+                <label for="albumSelect">Album:</label>
+                <select id="albumSelect" onchange="loadSongs()">
+                    <option value="">Select Album</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="yearFilter">Year:</label>
+                <select id="yearFilter">
+                    <option value="">Any Year</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="song-list" id="songList">
+            <div>Select an album to see songs</div>
+        </div>
+        
+        <div class="audio-player" id="audioPreview" style="display: none;">
+            <audio id="previewAudio" controls></audio>
+            <div class="game-info">
+                <div id="songInfo"></div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="startGame()" id="startGameBtn" disabled>Start Game</button>
+            <button onclick="showLobby()">Back to Lobby</button>
+        </div>
+    </div>
+
+    <!-- Join Game Screen -->
+    <div id="joinGameScreen" class="screen">
+        <h2>Join Game</h2>
+        <div class="form-group">
+            <label for="gameCode">Game Code:</label>
+            <input type="text" id="gameCode" placeholder="Enter game code">
+        </div>
+        <button onclick="joinGame()">Join Game</button>
+        <button onclick="showLobby()">Back to Lobby</button>
+    </div>
+
+    <!-- Waiting Screen -->
+    <div id="waitingScreen" class="screen">
+        <div class="waiting-screen">
+            <h2>Waiting...</h2>
+            <div class="spinner"></div>
+            <p id="waitingMessage">Song is being selected...</p>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen">
+        <h2>Round <span id="roundNumber">1</span></h2>
+        
+        <!-- Creator View -->
+        <div id="creatorView" style="display: none;">
+            <div class="game-info">
+                <h3>You are the Creator</h3>
+                <p>Wait for <span id="guesserName"></span> to guess the year</p>
+            </div>
+            <div class="audio-controls">
+                <button class="play-btn" onclick="toggleAudio()">▶️</button>
+            </div>
+            <audio id="gameAudio"></audio>
+            <div class="game-info">
+                <div><strong>Song:</strong> <span id="currentSong"></span></div>
+                <div><strong>Album:</strong> <span id="currentAlbum"></span></div>
+                <div><strong>Year:</strong> <span id="currentYear"></span></div>
+            </div>
+        </div>
+
+        <!-- Guesser View -->
+        <div id="guesserView" style="display: none;">
+            <div class="game-info">
+                <h3>Guess the Year</h3>
+                <p>Listen to Chester's voice and guess the year of this live performance</p>
+            </div>
+            <div class="audio-controls">
+                <button class="play-btn" onclick="toggleAudio()">▶️</button>
+            </div>
+            <audio id="gameAudioGuesser"></audio>
+            <div class="form-group">
+                <label for="yearGuess">Your Guess:</label>
+                <input type="number" id="yearGuess" placeholder="Enter year (e.g., 2003)" min="2000" max="2017">
+            </div>
+            <button onclick="submitGuess()" id="guessBtn">Guess</button>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="resultsScreen" class="screen">
+        <div class="result-screen">
+            <h2 id="resultTitle"></h2>
+            <div class="game-info">
+                <div><strong>Song:</strong> <span id="resultSong"></span></div>
+                <div><strong>Album:</strong> <span id="resultAlbum"></span></div>
+                <div><strong>Correct Year:</strong> <span id="resultYear"></span></div>
+                <div><strong>Your Guess:</strong> <span id="resultGuess"></span></div>
+                <div><strong>Winner:</strong> <span id="resultWinner"></span></div>
+            </div>
+            <div style="margin: 20px 0;">
+                <div>Current Scores:</div>
+                <div>Playsso: <span id="gameScorePlaysso">0</span></div>
+                <div>Aybel: <span id="gameScoreAybel">0</span></div>
+            </div>
+            <button onclick="playAgain()">Play Again</button>
+            <button onclick="endGame()">End Game</button>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAAZyG_5LKCCIoaJShKMrQItIIHvg3CeOY",
+        authDomain: "lncggid.firebaseapp.com",
+        projectId: "lncggid",
+        storageBucket: "lncggid.firebasestorage.app",
+        messagingSenderId: "256686109482",
+        appId: "1:256686109482:web:51c053924e8b3983162453"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    window.db = db;
+    window.doc = doc;
+    window.setDoc = setDoc;
+    window.getDoc = getDoc;
+    window.updateDoc = updateDoc;
+    window.onSnapshot = onSnapshot;
+</script>
+
+<script>
+    // Game state
+    let currentUser = '';
+    let gameState = {
+        gameId: '',
+        creator: '',
+        guesser: '',
+        round: 1,
+        currentSong: null,
+        scores: { Playsso: 0, Aybel: 0 },
+        isActive: false
+    };
+    let songsData = [];
+    let selectedSong = null;
+
+    // Sample songs data - you'll replace this with your actual clips.json
+    const sampleSongs = [
+        // Hybrid Theory (2000)
+        {
+            id: 1,
+            title: "One Step Closer",
+            album: "Hybrid Theory",
+            year: 2000,
+            audioFile: "/audio/one_step_closer_live_2000.mp3"
+        },
+        {
+            id: 2,
+            title: "In the End",
+            album: "Hybrid Theory", 
+            year: 2001,
+            audioFile: "/audio/in_the_end_live_2001.mp3"
+        },
+        {
+            id: 3,
+            title: "Crawling",
+            album: "Hybrid Theory",
+            year: 2002,
+            audioFile: "/audio/crawling_live_2002.mp3"
+        },
+        // Meteora (2003)
+        {
+            id: 4,
+            title: "Somewhere I Belong",
+            album: "Meteora",
+            year: 2003,
+            audioFile: "/audio/somewhere_i_belong_live_2003.mp3"
+        },
+        {
+            id: 5,
+            title: "Breaking the Habit",
+            album: "Meteora",
+            year: 2004,
+            audioFile: "/audio/breaking_the_habit_live_2004.mp3"
+        },
+        {
+            id: 6,
+            title: "Numb",
+            album: "Meteora",
+            year: 2005,
+            audioFile: "/audio/numb_live_2005.mp3"
+        },
+        // Minutes to Midnight (2007)
+        {
+            id: 7,
+            title: "What I've Done",
+            album: "Minutes to Midnight",
+            year: 2007,
+            audioFile: "/audio/what_ive_done_live_2007.mp3"
+        },
+        {
+            id: 8,
+            title: "Bleed It Out",
+            album: "Minutes to Midnight",
+            year: 2008,
+            audioFile: "/audio/bleed_it_out_live_2008.mp3"
+        },
+        {
+            id: 9,
+            title: "Shadow of the Day",
+            album: "Minutes to Midnight",
+            year: 2009,
+            audioFile: "/audio/shadow_of_the_day_live_2009.mp3"
+        },
+        // A Thousand Suns (2010)
+        {
+            id: 10,
+            title: "The Catalyst",
+            album: "A Thousand Suns",
+            year: 2010,
+            audioFile: "/audio/the_catalyst_live_2010.mp3"
+        },
+        {
+            id: 11,
+            title: "Waiting for the End",
+            album: "A Thousand Suns",
+            year: 2011,
+            audioFile: "/audio/waiting_for_the_end_live_2011.mp3"
+        },
+        {
+            id: 12,
+            title: "Burning in the Skies",
+            album: "A Thousand Suns",
+            year: 2012,
+            audioFile: "/audio/burning_in_the_skies_live_2012.mp3"
+        },
+        // Living Things (2012)
+        {
+            id: 13,
+            title: "Burn It Down",
+            album: "Living Things",
+            year: 2012,
+            audioFile: "/audio/burn_it_down_live_2012.mp3"
+        },
+        {
+            id: 14,
+            title: "Castle of Glass",
+            album: "Living Things",
+            year: 2013,
+            audioFile: "/audio/castle_of_glass_live_2013.mp3"
+        },
+        {
+            id: 15,
+            title: "Powerless",
+            album: "Living Things",
+            year: 2014,
+            audioFile: "/audio/powerless_live_2014.mp3"
+        },
+        // The Hunting Party (2014)
+        {
+            id: 16,
+            title: "Guilty All the Same",
+            album: "The Hunting Party",
+            year: 2014,
+            audioFile: "/audio/guilty_all_the_same_live_2014.mp3"
+        },
+        {
+            id: 17,
+            title: "Final Masquerade",
+            album: "The Hunting Party",
+            year: 2015,
+            audioFile: "/audio/final_masquerade_live_2015.mp3"
+        },
+        {
+            id: 18,
+            title: "Until It's Gone",
+            album: "The Hunting Party",
+            year: 2016,
+            audioFile: "/audio/until_its_gone_live_2016.mp3"
+        },
+        // One More Light (2017)
+        {
+            id: 19,
+            title: "Heavy",
+            album: "One More Light",
+            year: 2017,
+            audioFile: "/audio/heavy_live_2017.mp3"
+        },
+        {
+            id: 20,
+            title: "One More Light",
+            album: "One More Light",
+            year: 2017,
+            audioFile: "/audio/one_more_light_live_2017.mp3"
+        },
+        {
+            id: 21,
+            title: "Talking to Myself",
+            album: "One More Light",
+            year: 2017,
+            audioFile: "/audio/talking_to_myself_live_2017.mp3"
+        }
+    ];
+
+    // Initialize
+    window.onload = function() {
+        loadSongsData();
+        checkRememberedUser();
+        loadLeaderboard();
+    };
+
+    function loadSongsData() {
+        // In a real implementation, you'd fetch from clips.json
+        songsData = sampleSongs;
+        populateAlbums();
+        populateYears();
+    }
+
+    function populateAlbums() {
+        const albumSelect = document.getElementById('albumSelect');
+        const albums = [...new Set(songsData.map(song => song.album))];
+        
+        albums.forEach(album => {
+            const option = document.createElement('option');
+            option.value = album;
+            option.textContent = album;
+            albumSelect.appendChild(option);
+        });
+    }
+
+    function populateYears() {
+        const yearFilter = document.getElementById('yearFilter');
+        const years = [...new Set(songsData.map(song => song.year))].sort();
+        
+        years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearFilter.appendChild(option);
+        });
+    }
+
+    function checkRememberedUser() {
+        const remembered = localStorage.getItem('rememberedUser');
+        if (remembered && (remembered === 'Playsso' || remembered === 'Aybel')) {
+            document.getElementById('username').value = remembered;
+            document.getElementById('rememberMe').checked = true;
+        }
+    }
+
+    function login() {
+        const username = document.getElementById('username').value.trim();
+        const rememberMe = document.getElementById('rememberMe').checked;
+        const errorDiv = document.getElementById('loginError');
+
+        if (username !== 'Playsso' && username !== 'Aybel') {
+            errorDiv.textContent = 'Only Playsso and Aybel are allowed to login.';
+            return;
+        }
+
+        currentUser = username;
+        
+        if (rememberMe) {
+            localStorage.setItem('rememberedUser', username);
+        } else {
+            localStorage.removeItem('rememberedUser');
+        }
+
+        document.getElementById('welcomeUser').textContent = username;
+        showScreen('lobbyScreen');
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function showLobby() {
+        loadLeaderboard();
+        loadGameHistory();
+        showScreen('lobbyScreen');
+    }
+
+    function showCreateGame() {
+        showScreen('createGameScreen');
+    }
+
+    function showJoinGame() {
+        showScreen('joinGameScreen');
+    }
+
+    function loadSongs() {
+        const selectedAlbum = document.getElementById('albumSelect').value;
+        const selectedYear = document.getElementById('yearFilter').value;
+        const songList = document.getElementById('songList');
+        
+        let filteredSongs = songsData;
+        
+        if (selectedAlbum) {
+            filteredSongs = filteredSongs.filter(song => song.album === selectedAlbum);
+        }
+        
+        if (selectedYear) {
+            filteredSongs = filteredSongs.filter(song => song.year.toString() === selectedYear);
+        }
+        
+        if (filteredSongs.length === 0) {
+            songList.innerHTML = '<div>No songs match the selected filters</div>';
+            return;
+        }
+        
+        songList.innerHTML = '';
+        filteredSongs.forEach(song => {
+            const songItem = document.createElement('div');
+            songItem.className = 'song-item';
+            songItem.textContent = `${song.title} (${song.year})`;
+            songItem.onclick = () => selectSong(song, songItem);
+            songList.appendChild(songItem);
+        });
+    }
+
+    function selectSong(song, element) {
+        document.querySelectorAll('.song-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        element.classList.add('selected');
+        
+        selectedSong = song;
+        
+        // Show preview
+        const audioPreview = document.getElementById('audioPreview');
+        const previewAudio = document.getElementById('previewAudio');
+        const songInfo = document.getElementById('songInfo');
+        
+        previewAudio.src = song.audioFile;
+        songInfo.innerHTML = `
+            <div><strong>Song:</strong> ${song.title}</div>
+            <div><strong>Album:</strong> ${song.album}</div>
+            <div><strong>Year:</strong> ${song.year}</div>
+        `;
+        
+        audioPreview.style.display = 'block';
+        document.getElementById('startGameBtn').disabled = false;
+    }
+
+    async function startGame() {
+        if (!selectedSong) {
+            alert('Please select a song first!');
+            return;
+        }
+
+        const gameId = 'game_' + Date.now();
+        const otherPlayer = currentUser === 'Playsso' ? 'Aybel' : 'Playsso';
+        
+        gameState = {
+            gameId: gameId,
+            creator: currentUser,
+            guesser: otherPlayer,
+            round: 1,
+            currentSong: selectedSong,
+            scores: { Playsso: 0, Aybel: 0 },
+            isActive: true,
+            status: 'waiting_for_guesser'
+        };
+
+        // Save to Firebase
+        try {
+            await setDoc(doc(db, 'games', gameId), gameState);
+            setupGameScreen();
+            showScreen('gameScreen');
+        } catch (error) {
+            console.error('Error creating game:', error);
+            alert('Error creating game. Please try again.');
+        }
+    }
+
+    function setupGameScreen() {
+        document.getElementById('roundNumber').textContent = gameState.round;
+        
+        if (currentUser === gameState.creator) {
+            // Creator view
+            document.getElementById('creatorView').style.display = 'block';
+            document.getElementById('guesserView').style.display = 'none';
+            document.getElementById('guesserName').textContent = gameState.guesser;
+            
+            const gameAudio = document.getElementById('gameAudio');
+            gameAudio.src = gameState.currentSong.audioFile;
+            
+            document.getElementById('currentSong').textContent = gameState.currentSong.title;
+            document.getElementById('currentAlbum').textContent = gameState.currentSong.album;
+            document.getElementById('currentYear').textContent = gameState.currentSong.year;
+        } else {
+            // Guesser view
+            document.getElementById('creatorView').style.display = 'none';
+            document.getElementById('guesserView').style.display = 'block';
+            
+            const gameAudioGuesser = document.getElementById('gameAudioGuesser');
+            gameAudioGuesser.src = gameState.currentSong.audioFile;
+        }
+    }
+
+    function toggleAudio() {
+        const audio = currentUser === gameState.creator ? 
+            document.getElementById('gameAudio') : 
+            document.getElementById('gameAudioGuesser');
+            
+        if (audio.paused) {
+            audio.play();
+        } else {
+            audio.pause();
+        }
+    }
+
+    async function submitGuess() {
+        const guess = parseInt(document.getElementById('yearGuess').value);
+        if (!guess) {
+            alert('Please enter a year!');
+            return;
+        }
+
+        const correct = guess === gameState.currentSong.year;
+        let winner = '';
+        
+        if (correct) {
+            gameState.scores[currentUser]++;
+            winner = currentUser;
+        } else {
+            gameState.scores[gameState.creator]++;
+            winner = gameState.creator;
+        }
+
+        // Update game state
+        gameState.lastGuess = guess;
+        gameState.lastResult = { correct, winner };
+        gameState.status = 'round_complete';
+
+        try {
+            await updateDoc(doc(db, 'games', gameState.gameId), gameState);
+            showResults(guess, correct, winner);
+        } catch (error) {
+            console.error('Error submitting guess:', error);
+        }
+    }
+
+    function showResults(guess, correct, winner) {
+        document.getElementById('resultTitle').textContent = correct ? 'Correct! 🎉' : 'Wrong! 😔';
+        document.getElementById('resultTitle').className = correct ? 'correct' : 'incorrect';
+        
+        document.getElementById('resultSong').textContent = gameState.currentSong.title;
+        document.getElementById('resultAlbum').textContent = gameState.currentSong.album;
+        document.getElementById('resultYear').textContent = gameState.currentSong.year;
+        document.getElementById('resultGuess').textContent = guess;
+        document.getElementById('resultWinner').textContent = winner;
+        
+        document.getElementById('gameScorePlaysso').textContent = gameState.scores.Playsso;
+        document.getElementById('gameScoreAybel').textContent = gameState.scores.Aybel;
+        
+        showScreen('resultsScreen');
+    }
+
+    function playAgain() {
+        // Swap roles
+        const newCreator = gameState.guesser;
+        const newGuesser = gameState.creator;
+        
+        gameState.creator = newCreator;
+        gameState.guesser = newGuesser;
+        gameState.round++;
+        gameState.status = 'song_selection';
+        
+        if (currentUser === newCreator) {
+            // Current user is now the creator, show song selection
+            showScreen('createGameScreen');
+            // Reset selections
+            document.getElementById('albumSelect').value = '';
+            document.getElementById('yearFilter').value = '';
+            document.getElementById('songList').innerHTML = '<div>Select an album to see songs</div>';
+            document.getElementById('audioPreview').style.display = 'none';
+            document.getElementById('startGameBtn').disabled = true;
+            selectedSong = null;
+        } else {
+            // Current user is now the guesser, show waiting screen
+            document.getElementById('waitingMessage').textContent = 'Song is being selected...';
+            showScreen('waitingScreen');
+        }
+    }
+
+    async function endGame() {
+        // Save final scores to leaderboard
+        try {
+            const leaderboardDoc = await getDoc(doc(db, 'leaderboard', 'scores'));
+            let scores = { Playsso: 0, Aybel: 0 };
+            
+            if (leaderboardDoc.exists()) {
+                scores = leaderboardDoc.data();
+            }
+            
+            scores.Playsso += gameState.scores.Playsso;
+            scores.Aybel += gameState.scores.Aybel;
+            
+            await setDoc(doc(db, 'leaderboard', 'scores'), scores);
+            
+            // Save game history
+            const historyItem = {
+                date: new Date().toISOString(),
+                players: [gameState.creator, gameState.guesser],
+                finalScores: gameState.scores,
+                rounds: gameState.round - 1
+            };
+            
+            await setDoc(doc(db, 'gameHistory', gameState.gameId), historyItem);
+            
+        } catch (error) {
+            console.error('Error saving game data:', error);
+        }
+        
+        showLobby();
+    }
+
+    async function loadLeaderboard() {
+        try {
+            const leaderboardDoc = await getDoc(doc(db, 'leaderboard', 'scores'));
+            if (leaderboardDoc.exists()) {
+                const scores = leaderboardDoc.data();
+                document.getElementById('playssoScore').textContent = `${scores.Playsso || 0} points`;
+                document.getElementById('aybelScore').textContent = `${scores.Aybel || 0} points`;
+            }
+        } catch (error) {
+            console.error('Error loading leaderboard:', error);
+        }
+    }
+
+    async function loadGameHistory() {
+        // Implementation for loading game history from Firebase
+        // For now, showing placeholder
+        const historyList = document.getElementById('gameHistoryList');
+        historyList.innerHTML = '<div class="history-item">Loading game history...</div>';
+    }
+
+    function joinGame() {
+        const gameCode = document.getElementById('gameCode').value.trim();
+        if (!gameCode) {
+            alert('Please enter a game code!');
+            return;
+        }
+        
+        // Implementation for joining existing games
+        alert('Join game functionality will be implemented with multiplayer features!');
+    }
+</script>
+```
+
 </body>
 </html>
